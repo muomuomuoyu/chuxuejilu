@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>月经出血量记录（子宫肌瘤助手）</title>
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --card: #ffffff;
+      --text: #222;
+      --muted: #666;
+      --primary: #4f46e5;
+      --danger: #b91c1c;
+      --warn: #d97706;
+      --ok: #0f766e;
+      --border: #e5e7eb;
+      --shadow: 0 4px 16px rgba(0,0,0,.06);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans SC, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); }
+    header {
+      position: sticky; top: 0; z-index: 30;
+      background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,.9) 100%);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: saturate(1.2) blur(6px);
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 16px; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 900px) { .row-2 { grid-template-columns: 1fr 1fr; } }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+    .title { font-size: 18px; font-weight: 700; margin: 0 0 12px; }
+    .muted { color: var(--muted); }
+    label { display: inline-block; margin: 6px 8px 6px 0; font-size: 14px; }
+    input, select, textarea { width: 100%; padding: 10px 12px; border:1px solid var(--border); border-radius: 12px; background: #fff; font: inherit; }
+    input[type="checkbox"], input[type="radio"] { width: auto; }
+    textarea { min-height: 80px; resize: vertical; }
+    .btn { display: inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius: 12px; border:1px solid var(--border); background:#fff; cursor:pointer; font-weight:600; }
+    .btn.primary { background: var(--primary); color:#fff; border-color: transparent; }
+    .btn.danger { background: #fff; color: var(--danger); border-color: #f3dcdc; }
+    .btn.warn { background: #fff; color: var(--warn); }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .flex { display:flex; gap:12px; align-items:center; }
+    .stack { display:flex; flex-direction:column; gap:10px; }
+    .grid { display:grid; gap:12px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .center { display:flex; align-items:center; justify-content:center; }
+    .kpi { display:grid; grid-template-columns: repeat(2,1fr); gap:12px; }
+    @media (min-width: 640px){ .kpi { grid-template-columns: repeat(4,1fr);} }
+    .kpi .box { background:#fafafa; border:1px dashed var(--border); border-radius: 12px; padding: 10px; }
+    .kpi .num { font-size: 22px; font-weight: 800; }
+    .chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#f3f4f6; font-size:12px; }
+    .chip.ok { background:#ecfdf5; color: var(--ok);} .chip.warn { background:#fff7ed; color:var(--warn);} .chip.danger{ background:#fef2f2; color: var(--danger);}  
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:10px; border-bottom:1px solid var(--border); text-align:left; font-size: 14px; }
+    th { background:#fafafa; font-weight:700; }
+    .right { text-align:right; }
+
+    .banner { position: sticky; top: 58px; z-index: 20; margin: 0; border-top:1px solid #fde8e8; border-bottom:1px solid #fde8e8; background: #fff5f5; color: var(--danger); }
+    .banner .wrap { padding-top:10px; padding-bottom:10px; }
+    .small { font-size: 12px; }
+
+    details.settings > summary { list-style:none; cursor: pointer; font-weight:700; }
+    details.settings[open] { outline: 2px solid #eef2ff; border-radius: 12px; }
+
+    .sats { display:flex; gap:8px; flex-wrap:wrap; }
+    .sats label { padding:6px 10px; border:1px solid var(--border); border-radius: 100px; background:#fff; cursor:pointer; }
+
+    .footer { color:#777; font-size:12px; padding: 16px; text-align:center; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap flex" style="justify-content: space-between; gap:12px;">
+      <div class="flex" style="gap:10px;">
+        <strong>月经出血量记录（子宫肌瘤助手）</strong>
+        <span class="chip">本工具仅供记录，不替代医疗建议</span>
+      </div>
+      <div class="flex" style="gap:8px; align-items:center;">
+        <label class="muted small">选择日期</label>
+        <input type="date" id="datePicker" />
+      </div>
+    </div>
+  </header>
+
+  <div class="banner">
+    <div class="wrap">
+      <strong>紧急提示：</strong>
+      <span>“1小时浸透1片大号卫生巾，且连续大于等于2小时”；“短时间内大量血块（大于2cm）不断出现，或明显头晕、心慌、乏力、脸色苍白、晕厥”——出现以上任何情况需要立刻前往急诊。</span>
+    </div>
+  </div>
+
+  <main class="wrap row">
+
+    <section class="card">
+      <h2 class="title">今日概览</h2>
+      <div class="kpi">
+        <div class="box"><div class="muted small">当日出血总量</div><div class="num"><span id="kpiDailyMl">0</span> ml</div></div>
+        <div class="box"><div class="muted small">过去24小时出血量</div><div class="num"><span id="kpi24hMl">0</span> ml <span id="chip24h" class="chip small"></span></div></div>
+        <div class="box"><div class="muted small">疼痛评分（0–10）</div><div class="num" id="kpiPain">—</div></div>
+        <div class="box"><div class="muted small">大血块>2cm</div><div class="num" id="kpiClots">—</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3 class="title">设置（吸收量与提醒阈值）</h3>
+      <details class="settings">
+        <summary>展开 / 收起 设置</summary>
+        <div class="grid grid-3" style="margin-top:12px;">
+          <div class="stack">
+            <label>卫生巾类型 A 名称</label>
+            <input id="padAName" placeholder="如：大号夜用" />
+            <label>类型 A 满载吸收量（ml）</label>
+            <input id="padACap" type="number" min="5" step="1" />
+          </div>
+          <div class="stack">
+            <label>卫生巾类型 B 名称</label>
+            <input id="padBName" placeholder="如：日用中号" />
+            <label>类型 B 满载吸收量（ml）</label>
+            <input id="padBCap" type="number" min="5" step="1" />
+          </div>
+          <div class="stack">
+            <label>24小时提醒阈值（ml）</label>
+            <input id="thresholdMl" type="number" min="60" step="5" />
+            <div class="muted small">建议设置为 120–150 ml</div>
+          </div>
+        </div>
+        <div class="flex" style="margin-top:12px; justify-content:flex-end;">
+          <button class="btn" id="btnResetDefaults" title="恢复默认">恢复默认</button>
+          <button class="btn primary" id="btnSaveSettings">保存设置</button>
+        </div>
+      </details>
+    </section>
+
+    <section class="card">
+      <h3 class="title">记录卫生巾与出血量</h3>
+      <div class="grid grid-4">
+        <div>
+          <label>卫生巾类型</label>
+          <select id="padTypeSelect"></select>
+        </div>
+        <div>
+          <label>浸透程度</label>
+          <div class="sats" id="satGroup">
+            <!-- radio buttons injected -->
+          </div>
+        </div>
+        <div>
+          <label>更换时间</label>
+          <input id="padTime" type="time" />
+        </div>
+        <div class="center">
+          <button class="btn primary" id="btnAddPad">+ 添加一片</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>类型</th>
+              <th class="right">浸透</th>
+              <th class="right">估算(ml)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="padList"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3 class="title">用药记录</h3>
+      <div class="grid grid-4">
+        <div>
+          <label>药物</label>
+          <select id="medName">
+            <option value="Cerazette">Cerazette（去氧孕烯）</option>
+            <option value="Tranexamic Acid">过氨甲环酸（止血）</option>
+            <option value="Iron">铁剂</option>
+            <option value="Other">其他…</option>
+          </select>
+        </div>
+        <div>
+          <label>时间</label>
+          <input id="medTime" type="time" />
+        </div>
+        <div>
+          <label>片数</label>
+          <input id="medCount" type="number" min="0" step="1" value="1" />
+        </div>
+        <div class="center">
+          <button class="btn" id="btnAddMed">+ 添加用药</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>药物</th>
+              <th class="right">片数</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="medList"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3 class="title">症状与疼痛</h3>
+      <div class="grid grid-3">
+        <div>
+          <label>疼痛评分：<strong><span id="painVal">0</span></strong></label>
+          <input id="pain" type="range" min="0" max="10" step="1" />
+        </div>
+        <div class="stack">
+          <label><input type="checkbox" id="chkClots" /> 有大血块（>2cm）</label>
+          <label><input type="checkbox" id="chkDizzy" /> 头晕</label>
+        </div>
+        <div class="stack">
+          <label><input type="checkbox" id="chkPalp" /> 心悸/心慌</label>
+          <label><input type="checkbox" id="chkIron" /> 今日服用铁剂</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3 class="title">备注</h3>
+      <textarea id="notes" placeholder="填写今天的特殊情况，例如：漏服一次止血药；剧烈运动；情绪压力大等"></textarea>
+      <div class="flex" style="justify-content:flex-end; margin-top:8px;">
+        <button class="btn" id="btnSaveDay">保存今日信息</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3 class="title">历史汇总（最近30天）</h3>
+      <div class="muted small" style="margin-bottom:6px;">仅供参考，估算基于你设置的卫生巾满载吸收量与浸透比例。</div>
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th class="right">总出血量 (ml)</th>
+            <th class="right">疼痛(0-10)</th>
+            <th>有大血块</th>
+            <th>头晕</th>
+            <th>心悸</th>
+          </tr>
+        </thead>
+        <tbody id="history"></tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <footer class="footer">© 2025 出血量记录工具（本工具不提供诊疗建议，如有不适请及时就医）</footer>
+
+  <script>
+    // ===== Utilities =====
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const padSats = [ {label:'25%', val:0.25}, {label:'50%', val:0.5}, {label:'75%', val:0.75}, {label:'100%', val:1} ];
+
+    function todayStr(d=new Date()){
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${dd}`;
+    }
+    function nowHHMM(d=new Date()){
+      return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    function parseDateTime(dateStr, timeStr){
+      // Create local Date from yyyy-mm-dd and HH:MM
+      const [y,m,d] = dateStr.split('-').map(Number);
+      const [hh,mm] = timeStr.split(':').map(Number);
+      return new Date(y, m-1, d, hh||0, mm||0, 0, 0);
+    }
+
+    // ===== Storage =====
+    const K_SETTINGS = 'mt_settings_v1';
+    const K_PADS = 'mt_pads_v1';
+    const K_DAYS = 'mt_days_v1';
+    const K_MEDS = 'mt_meds_v1';
+
+    const Store = {
+      loadSettings(){
+        const s = JSON.parse(localStorage.getItem(K_SETTINGS) || 'null');
+        if(s) return s;
+        const def = {
+          padTypes: [ { name:'大号卫生巾', capMl:30 }, { name:'日用中号', capMl:20 } ],
+          thresholdMl: 120
+        };
+        localStorage.setItem(K_SETTINGS, JSON.stringify(def));
+        return def;
+      },
+      saveSettings(s){ localStorage.setItem(K_SETTINGS, JSON.stringify(s)); },
+      loadPads(){ return JSON.parse(localStorage.getItem(K_PADS) || '[]'); },
+      savePads(a){ localStorage.setItem(K_PADS, JSON.stringify(a)); },
+      loadDays(){ return JSON.parse(localStorage.getItem(K_DAYS) || '{}'); },
+      saveDays(o){ localStorage.setItem(K_DAYS, JSON.stringify(o)); },
+      loadMeds(){ return JSON.parse(localStorage.getItem(K_MEDS) || '[]'); },
+      saveMeds(a){ localStorage.setItem(K_MEDS, JSON.stringify(a)); },
+    };
+
+    // ===== App State =====
+    const App = {
+      settings: Store.loadSettings(),
+      pads: Store.loadPads(), // array of {id, date:'yyyy-mm-dd', timestamp, timeStr, typeIdx, sat, ml}
+      days: Store.loadDays(), // map date->{pain, clots,dizzy,palp,iron, notes}
+      meds: Store.loadMeds(), // array of {id, date, timestamp, timeStr, name, count}
+      selDate: todayStr(),
+    };
+
+    // ===== Init UI =====
+    function init(){
+      // date picker
+      $('#datePicker').value = App.selDate;
+      $('#datePicker').addEventListener('change', e=>{ App.selDate = e.target.value; renderAll(); });
+
+      // settings
+      $('#padAName').value = App.settings.padTypes[0].name;
+      $('#padACap').value = App.settings.padTypes[0].capMl;
+      $('#padBName').value = App.settings.padTypes[1].name;
+      $('#padBCap').value = App.settings.padTypes[1].capMl;
+      $('#thresholdMl').value = App.settings.thresholdMl;
+      $('#btnSaveSettings').addEventListener('click', saveSettings);
+      $('#btnResetDefaults').addEventListener('click', ()=>{
+        App.settings = { padTypes:[{name:'大号卫生巾', capMl:30}, {name:'日用中号', capMl:20}], thresholdMl:120 };
+        Store.saveSettings(App.settings); initSettingsUI(); renderAll();
+      });
+
+      // pad inputs
+      initPadControls();
+
+      // med inputs
+      $('#medTime').value = nowHHMM();
+      $('#btnAddMed').addEventListener('click', addMed);
+
+      // symptoms/pain/notes
+      $('#pain').value = App.days[App.selDate]?.pain ?? 0; $('#painVal').textContent = $('#pain').value;
+      $('#pain').addEventListener('input', ()=>{ $('#painVal').textContent = $('#pain').value; });
+      $('#chkClots').checked = !!App.days[App.selDate]?.clots;
+      $('#chkDizzy').checked = !!App.days[App.selDate]?.dizzy;
+      $('#chkPalp').checked = !!App.days[App.selDate]?.palp;
+      $('#chkIron').checked = !!App.days[App.selDate]?.iron;
+      $('#notes').value = App.days[App.selDate]?.notes || '';
+      $('#btnSaveDay').addEventListener('click', saveDay);
+
+      renderAll();
+    }
+
+    function initSettingsUI(){
+      $('#padAName').value = App.settings.padTypes[0].name;
+      $('#padACap').value = App.settings.padTypes[0].capMl;
+      $('#padBName').value = App.settings.padTypes[1].name;
+      $('#padBCap').value = App.settings.padTypes[1].capMl;
+      $('#thresholdMl').value = App.settings.thresholdMl;
+      initPadControls();
+    }
+
+    function initPadControls(){
+      // pad type select
+      const sel = $('#padTypeSelect');
+      sel.innerHTML = '';
+      App.settings.padTypes.forEach((p,idx)=>{
+        const opt = document.createElement('option');
+        opt.value = idx; opt.textContent = `${p.name}（${p.capMl} ml）`;
+        sel.appendChild(opt);
+      });
+      // saturation radios
+      const sats = $('#satGroup'); sats.innerHTML='';
+      padSats.forEach((s,i)=>{
+        const id = `sat_${i}`;
+        const lab = document.createElement('label');
+        lab.innerHTML = `<input type="radio" name="sat" value="${s.val}" ${i===2? 'checked':''}> ${s.label}`; // default 75%
+        sats.appendChild(lab);
+      });
+      // time default now
+      $('#padTime').value = nowHHMM();
+      $('#btnAddPad').onclick = addPad;
+    }
+
+    function saveSettings(){
+      const aName = $('#padAName').value.trim() || '类型A';
+      const aCap = Math.max(1, Number($('#padACap').value)||30);
+      const bName = $('#padBName').value.trim() || '类型B';
+      const bCap = Math.max(1, Number($('#padBCap').value)||20);
+      const threshold = Math.max(60, Number($('#thresholdMl').value)||120);
+      App.settings = { padTypes:[{name:aName, capMl:aCap},{name:bName, capMl:bCap}], thresholdMl: threshold };
+      Store.saveSettings(App.settings);
+      initSettingsUI();
+      renderAll();
+    }
+
+    // ===== Pads =====
+    function addPad(){
+      const typeIdx = Number($('#padTypeSelect').value);
+      const sat = Number(($('input[name="sat"]:checked')||{value:0.75}).value);
+      const timeStr = $('#padTime').value || nowHHMM();
+      const dt = parseDateTime(App.selDate, timeStr);
+      const cap = App.settings.padTypes[typeIdx].capMl;
+      const ml = +(cap * sat).toFixed(1);
+      const id = 'p_'+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+      App.pads.push({ id, date: App.selDate, timestamp: dt.getTime(), timeStr, typeIdx, sat, ml });
+      Store.savePads(App.pads);
+      $('#padTime').value = nowHHMM();
+      renderPads();
+      renderKPIs();
+      renderHistory();
+    }
+
+    function deletePad(id){
+      App.pads = App.pads.filter(p=>p.id!==id);
+      Store.savePads(App.pads);
+      renderPads();
+      renderKPIs();
+      renderHistory();
+    }
+
+    function renderPads(){
+      const tbody = $('#padList'); tbody.innerHTML='';
+      const rows = App.pads.filter(p=>p.date===App.selDate).sort((a,b)=>a.timestamp-b.timestamp);
+      for(const p of rows){
+        const tr = document.createElement('tr');
+        const typeName = App.settings.padTypes[p.typeIdx]?.name || `类型${p.typeIdx}`;
+        tr.innerHTML = `
+          <td>${p.timeStr}</td>
+          <td>${typeName}</td>
+          <td class="right">${Math.round(p.sat*100)}%</td>
+          <td class="right">${p.ml}</td>
+          <td class="right"><button class="btn danger small" data-id="${p.id}">删除</button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+      // bind delete
+      $$('#padList button[data-id]').forEach(btn=> btn.addEventListener('click', ()=> deletePad(btn.getAttribute('data-id'))));
+    }
+
+    // ===== Meds =====
+    function addMed(){
+      const nameSel = $('#medName');
+      let name = nameSel.value;
+      if(name==='Other'){
+        const n = prompt('请输入药物名称');
+        if(n) name = n.trim(); else return;
+      }
+      const timeStr = $('#medTime').value || nowHHMM();
+      const dt = parseDateTime(App.selDate, timeStr);
+      const count = Math.max(0, Number($('#medCount').value)||0);
+      const id = 'm_'+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+      App.meds.push({ id, date: App.selDate, timestamp: dt.getTime(), timeStr, name, count });
+      Store.saveMeds(App.meds);
+      $('#medTime').value = nowHHMM();
+      renderMeds();
+    }
+
+    function deleteMed(id){
+      App.meds = App.meds.filter(m=>m.id!==id);
+      Store.saveMeds(App.meds);
+      renderMeds();
+    }
+
+    function renderMeds(){
+      const tbody = $('#medList'); tbody.innerHTML='';
+      const rows = App.meds.filter(m=>m.date===App.selDate).sort((a,b)=>a.timestamp-b.timestamp);
+      for(const m of rows){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${m.timeStr}</td>
+          <td>${m.name}</td>
+          <td class="right">${m.count}</td>
+          <td class="right"><button class="btn danger small" data-id="${m.id}">删除</button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+      $$('#medList button[data-id]').forEach(btn=> btn.addEventListener('click', ()=> deleteMed(btn.getAttribute('data-id'))));
+    }
+
+    // ===== Day (pain/symptoms/notes) =====
+    function saveDay(){
+      const d = App.days[App.selDate] || {};
+      d.pain = Number($('#pain').value)||0;
+      d.clots = !!$('#chkClots').checked;
+      d.dizzy = !!$('#chkDizzy').checked;
+      d.palp = !!$('#chkPalp').checked;
+      d.iron = !!$('#chkIron').checked;
+      d.notes = $('#notes').value || '';
+      App.days[App.selDate] = d;
+      Store.saveDays(App.days);
+      renderKPIs();
+      renderHistory();
+    }
+
+    // ===== KPIs & Stats =====
+    function sumDailyMl(dateStr){
+      return App.pads.filter(p=>p.date===dateStr).reduce((s,p)=>s+p.ml,0);
+    }
+    function sum24hMl(){
+      const now = Date.now();
+      const dayMs = 24*60*60*1000;
+      return App.pads.filter(p=> (now - p.timestamp) <= dayMs).reduce((s,p)=>s+p.ml,0);
+    }
+
+    function renderKPIs(){
+      $('#kpiDailyMl').textContent = sumDailyMl(App.selDate).toFixed(1);
+      const m24 = sum24hMl();
+      $('#kpi24hMl').textContent = m24.toFixed(1);
+      const chip = $('#chip24h'); chip.textContent=''; chip.className='chip small';
+      const th = App.settings.thresholdMl;
+      if(m24 >= th){ chip.textContent = `≥ ${th} ml 需就医`; chip.classList.add('danger'); }
+      else if(m24 >= (th*0.8)) { chip.textContent = `接近阈值`; chip.classList.add('warn'); }
+      else { chip.textContent = '安全'; chip.classList.add('ok'); }
+
+      const d = App.days[App.selDate] || {};
+      $('#kpiPain').textContent = (d.pain ?? '—');
+      $('#kpiClots').textContent = d.clots ? '是' : '否';
+    }
+
+    function renderHistory(){
+      const tbody = $('#history'); tbody.innerHTML='';
+      // Collect last 30 days from today backwards
+      const rows = [];
+      for(let i=0;i<30;i++){
+        const d = new Date(); d.setDate(d.getDate()-i);
+        const ds = todayStr(d);
+        const ml = sumDailyMl(ds);
+        const day = App.days[ds] || {};
+        if(ml>0 || day.pain>0 || day.clots || day.dizzy || day.palp){
+          rows.push({date: ds, ml, pain: day.pain ?? '', clots: !!day.clots, dizzy: !!day.dizzy, palp: !!day.palp});
+        }
+      }
+      rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.date}</td>
+          <td class="right">${r.ml.toFixed(1)}</td>
+          <td class="right">${r.pain!==''? r.pain : '—'}</td>
+          <td>${r.clots?'是':'否'}</td>
+          <td>${r.dizzy?'是':'否'}</td>
+          <td>${r.palp?'是':'否'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderAll(){
+      // reset day controls to current date values
+      const day = App.days[App.selDate] || {};
+      $('#pain').value = day.pain ?? 0; $('#painVal').textContent = $('#pain').value;
+      $('#chkClots').checked = !!day.clots;
+      $('#chkDizzy').checked = !!day.dizzy;
+      $('#chkPalp').checked = !!day.palp;
+      $('#chkIron').checked = !!day.iron;
+      $('#notes').value = day.notes || '';
+
+      renderPads();
+      renderMeds();
+      renderKPIs();
+      renderHistory();
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
